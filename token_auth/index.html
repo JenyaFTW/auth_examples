@@ -10,7 +10,7 @@
 
     <body>
         <main id="main-holder">
-            <a href="/logout" id="logout">Logout</a>
+            <button id="logout">Logout</button>
 
             <h1 id="login-header">Login</h1>
 
@@ -142,7 +142,7 @@
                     loginHeader.remove();
 
                     mainHolder.append(`Hello ${username}`);
-                    logoutLink.style.opacity = 1;
+                    logoutButton.style.opacity = 1;
                 }
             });
         }
@@ -151,9 +151,9 @@
         const loginForm = document.getElementById("login-form");
         const loginButton = document.getElementById("login-form-submit");
         const loginErrorMsg = document.getElementById("login-error-msg");
-        const logoutLink =  document.getElementById("logout");
+        const logoutButton =  document.getElementById("logout");
 
-        logoutLink.addEventListener("click", (e) => {
+        logoutButton.addEventListener("click", (e) => {
             e.preventDefault();
             sessionStorage.removeItem('session');
             location.reload();

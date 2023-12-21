@@ -5,19 +5,23 @@ const { AuthenticationClient, UserInfoClient } = require('auth0');
 const { auth } = require('express-oauth2-jwt-bearer');
 const port = 3000;
 
+const CLIENT_ID = '7Olt2WPXxlf56SYb41BOyGAfxiiyGAe6';
+const CLIENT_SECRET = '90P5wXl-xE2IQEcmG9e42Xs2GNpKt9YfAZ5Gq84Ef_Jc2v8Sbi6P4RSL0ZwQdTwQ';
+const DOMAIN = 'yevgen-kpi.eu.auth0.com';
+
 const auth0 = new AuthenticationClient({
-    domain: 'yevgen-kpi.eu.auth0.com',
-    clientId: '7Olt2WPXxlf56SYb41BOyGAfxiiyGAe6',
-    clientSecret: '90P5wXl-xE2IQEcmG9e42Xs2GNpKt9YfAZ5Gq84Ef_Jc2v8Sbi6P4RSL0ZwQdTwQ',
+    domain: DOMAIN,
+    clientId: CLIENT_ID,
+    clientSecret: CLIENT_SECRET,
 });
 
 const checkJwt = auth({
     audience: 'http://localhost:3000/',
-    issuerBaseURL: `https://yevgen-kpi.eu.auth0.com/`,
+    issuerBaseURL: `https://${DOMAIN}/`,
 });
 
 const userInfo = new UserInfoClient({
-    domain: 'yevgen-kpi.eu.auth0.com',
+    domain: DOMAIN,
 });
 
 const app = express();
@@ -31,13 +35,28 @@ app.get('/api/me', checkJwt, async (req, res) => {
     if (auth) {
         const token = auth.token;
         const { data } = await userInfo.getUserInfo(token);
+        console.log(data);
         return res.json(data);
     }
-    return res.status(401).json({'error': 'Forbidden'});
+    return res.status(401).json({ 'error': 'Forbidden' });
 });
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname + '/index.html'));
+});
+
+app.get('/api/redirect', (req, res) => {
+    return res.redirect(301, `https://${DOMAIN}/authorize?client_id=${CLIENT_ID}&redirect_uri=http://localhost:3000/&response_type=code&response_mode=query&scope=offline_access+openid+profile&audience=http://localhost:3000/&prompt=login`);
+});
+
+app.get('/api/callback', async (req, res) => {
+    const code = req.query['code'];
+    if (code) {
+        const data = await auth0.oauth.authorizationCodeGrant({ code, redirect_uri: 'http://localhost:3000/', grant_type: 'authorization_code' });
+        console.log(data.data.access_token);
+        return res.json(data.data);
+    }
+    return res.status(403).json({ error: 'Forbidden' });
 });
 
 app.post('/api/login', async (req, res) => {

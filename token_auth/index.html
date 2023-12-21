@@ -11,19 +11,6 @@
 <body>
     <main id="main-holder">
         <button id="logout">Logout</button>
-
-        <h1 id="login-header">Login</h1>
-
-        <div id="login-error-msg-holder">
-            <p id="login-error-msg">Invalid username <span id="error-msg-second-line">and/or password</span></p>
-        </div>
-
-        <form id="login-form" action="/api/login" method="post">
-            <input type="text" name="login" id="username-field" class="login-form-field" placeholder="Username">
-            <input type="password" name="password" id="password-field" class="login-form-field" placeholder="Password">
-            <input type="submit" value="Login" id="login-form-submit">
-        </form>
-
     </main>
 </body>
 
@@ -139,7 +126,7 @@
             sessionStorage.setItem('tokenExpiry', Math.floor(new Date(Date.now() + REFRESH_TOKEN * 1000).getTime() / 1000));
             location.reload();
         }).catch((response) => {
-            loginErrorMsg.style.opacity = 1;
+
         });
     } else if (accessToken) {
         axios.get('/api/me', {
@@ -151,21 +138,39 @@
 
             if (nickname) {
                 const mainHolder = document.getElementById("main-holder");
-                const loginHeader = document.getElementById("login-header");
-
-                loginForm.remove();
-                loginErrorMsg.remove();
-                loginHeader.remove();
 
                 mainHolder.append(`Hello ${nickname}`);
                 logoutButton.style.opacity = 1;
             }
         });
+    } else {
+        const params = (new URL(document.location)).searchParams;
+        const code = params.get("code");
+        if (code) {
+            axios({
+                method: 'get',
+                url: '/api/callback',
+                params: {
+                    code
+                }
+            }).then((response) => {
+                const { access_token, refresh_token, expires_in } = response.data;
+                console.log(response.data);
+                sessionStorage.setItem('accessToken', access_token);
+                sessionStorage.setItem('refreshToken', refresh_token);
+                sessionStorage.setItem('tokenExpiry', Math.floor(new Date(Date.now() + REFRESH_TOKEN * 1000).getTime() / 1000));
+                let params = new URLSearchParams(location.search)
+                params.delete('code')
+                history.replaceState(null, '', '?' + params + location.hash)
+                location.reload();
+            }).catch((response) => {
+
+            });
+        } else {
+            window.location = '/api/redirect';
+        }
     }
 
-    const loginForm = document.getElementById("login-form");
-    const loginButton = document.getElementById("login-form-submit");
-    const loginErrorMsg = document.getElementById("login-error-msg");
     const logoutButton = document.getElementById("logout");
 
     logoutButton.addEventListener("click", (e) => {
@@ -174,29 +179,6 @@
         sessionStorage.removeItem('refreshToken');
         location.reload();
     });
-
-    loginButton.addEventListener("click", (e) => {
-        e.preventDefault();
-        const login = loginForm.login.value;
-        const password = loginForm.password.value;
-
-        axios({
-            method: 'post',
-            url: '/api/login',
-            data: {
-                login,
-                password
-            }
-        }).then((response) => {
-            const { access_token, refresh_token, expires_in } = response.data;
-            sessionStorage.setItem('accessToken', access_token);
-            sessionStorage.setItem('refreshToken', refresh_token);
-            sessionStorage.setItem('tokenExpiry', Math.floor(new Date(Date.now() + REFRESH_TOKEN * 1000).getTime() / 1000));
-            location.reload();
-        }).catch((response) => {
-            loginErrorMsg.style.opacity = 1;
-        });
-    })
 </script>
 
 </html>
